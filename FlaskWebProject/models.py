@@ -1,26 +1,57 @@
 from datetime import datetime
+import string
+import random
+
 from FlaskWebProject import app, db, login
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from azure.storage.blob import BlockBlobService
-import string, random
 from werkzeug.utils import secure_filename
 from flask import flash
 
-blob_container = app.config['BLOB_CONTAINER']
-blob_service = BlockBlobService(account_name=app.config['BLOB_ACCOUNT'], account_key=app.config['BLOB_STORAGE_KEY'])
+from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceNotFoundError
+
+
+# -----------------------------
+# Azure Blob configuration
+# -----------------------------
+
+BLOB_CONTAINER = app.config['BLOB_CONTAINER']
+BLOB_ACCOUNT = app.config['BLOB_ACCOUNT']
+BLOB_KEY = app.config['BLOB_STORAGE_KEY']
+
+connection_string = (
+    f"DefaultEndpointsProtocol=https;"
+    f"AccountName={BLOB_ACCOUNT};"
+    f"AccountKey={BLOB_KEY};"
+    f"EndpointSuffix=core.windows.net"
+)
+
+blob_service = BlobServiceClient.from_connection_string(connection_string)
+container_client = blob_service.get_container_client(BLOB_CONTAINER)
+
+
+# -----------------------------
+# Helpers
+# -----------------------------
 
 def id_generator(size=32, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
+
+# -----------------------------
+# User model
+# -----------------------------
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     password_hash = db.Column(db.String(128))
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return f'<User {self.username}>'
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -28,12 +59,19 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+
 @login.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+# -----------------------------
+# Post model
+# -----------------------------
 
 class Post(db.Model):
     __tablename__ = 'posts'
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150))
     author = db.Column(db.String(75))
@@ -43,26 +81,40 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def __repr__(self):
-        return '<Post {}>'.format(self.body)
+        return f'<Post {self.id}>'
 
-    def save_changes(self, form, file, userId, new=False):
+    def save_changes(self, form, file, user_id, new=False):
         self.title = form.title.data
         self.author = form.author.data
         self.body = form.body.data
-        self.user_id = userId
+        self.user_id = user_id
 
         if file:
-            filename = secure_filename(file.filename);
-            fileextension = filename.rsplit('.',1)[1];
-            Randomfilename = id_generator();
-            filename = Randomfilename + '.' + fileextension;
+            original_filename = secure_filename(file.filename)
+            extension = original_filename.rsplit('.', 1)[1]
+            filename = f"{id_generator()}.{extension}"
+
             try:
-                blob_service.create_blob_from_stream(blob_container, filename, file)
-                if(self.image_path):
-                    blob_service.delete_blob(blob_container, self.image_path)
-            except Exception:
-                flash(Exception)
-            self.image_path =  filename
+                # Upload new image
+                container_client.upload_blob(
+                    name=filename,
+                    data=file,
+                    overwrite=True
+                )
+
+                # Delete old image if exists
+                if self.image_path:
+                    try:
+                        container_client.delete_blob(self.image_path)
+                    except ResourceNotFoundError:
+                        pass
+
+                self.image_path = filename
+
+            except Exception as e:
+                flash(str(e))
+
         if new:
             db.session.add(self)
+
         db.session.commit()

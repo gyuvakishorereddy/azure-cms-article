@@ -17,8 +17,7 @@ alembic==1.4.0
 Mako==1.1.1
 python-editor==1.0.4
 
-azure-storage-blob==12.19.0
-azure-common==1.1.24
+
 
 msal==1.13.0
 
@@ -37,3 +36,7 @@ python-dateutil==2.8.1
 six==1.14.0
 
 pyodbc==5.2.0
+
+azure-storage-blob>=12.19.0
+azure-core>=1.29.0
+
