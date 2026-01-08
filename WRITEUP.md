@@ -1,12 +1,19 @@
-# Write-up Template
+Deployment Choice Analysis
 
-### Analyze, choose, and justify the appropriate resource option for deploying the app.
+For deploying the Article CMS Flask application, I compared Azure Virtual Machine (VM) and Azure App Service based on cost, scalability, availability, and ease of use.
 
-*For **both** a VM or App Service solution for the CMS app:*
-- *Analyze costs, scalability, availability, and workflow*
-- *Choose the appropriate solution (VM or App Service) for deploying the app*
-- *Justify your choice*
+Azure Virtual Machine
 
-### Assess app changes that would change your decision.
+Using a VM gives full control over the operating system, but it requires manual setup, maintenance, security updates, and scaling. The cost is higher because the VM runs continuously, even when the application is not in use. Managing deployments and updates also takes more time.
 
-*Detail how the app and any other needs would have to change for you to change your decision in the last section.* 
+Azure App Service
+
+Azure App Service is designed specifically for web applications. It is easier to deploy, cheaper for small projects, and automatically handles scaling, availability, and system updates. It also integrates well with Azure SQL Database and Azure Blob Storage, which are used in this project.
+
+Final Choice
+
+I chose Azure App Service because it is simpler, more cost-effective, and requires less maintenance. It allows me to focus on application development instead of infrastructure management.
+
+When I Would Change This Decision
+
+I would choose a Virtual Machine if the application needed full OS control, custom system software, or advanced configurations that App Service does not support. For the current CMS application, App Service is the best option.
