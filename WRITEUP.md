@@ -17,3 +17,5 @@ I chose Azure App Service because it is simpler, more cost-effective, and requir
 When I Would Change This Decision
 
 I would choose a Virtual Machine if the application needed full OS control, custom system software, or advanced configurations that App Service does not support. For the current CMS application, App Service is the best option.
+
+
