@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5555:5555"
+    environment:
+      # Flask Configuration
+      - SECRET_KEY=${SECRET_KEY}
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5555
+      
+      # Azure Blob Storage
+      - BLOB_ACCOUNT=${BLOB_ACCOUNT}
+      - BLOB_CONTAINER=${BLOB_CONTAINER}
+      - BLOB_STORAGE_KEY=${BLOB_STORAGE_KEY}
+      
+      # Azure SQL Database
+      - SQL_SERVER=${SQL_SERVER}
+      - SQL_DATABASE=${SQL_DATABASE}
+      - SQL_USER_NAME=${SQL_USER_NAME}
+      - SQL_PASSWORD=${SQL_PASSWORD}
+      
+      # Azure AD / MSAL
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+    
+    volumes:
+      # Mount logs directory for persistence (optional)
+      - ./logs:/app/logs
+      # Mount instance directory for session data (optional)
+      - ./instance:/app/instance
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
